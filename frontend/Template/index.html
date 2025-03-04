@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monitoramento de Dados Governamentais</title>
+</head>
+<body>
+    <h1>Dados Monitorados</h1>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Órgão</th>
+            <th>Site Oficial</th>
+            <th>Data de Criação</th>
+            <th>Última Atualização</th>
+        </tr>
+        {% for dado in dados %}
+        <tr>
+            <td>{{ dado[0] }}</td>
+            <td>{{ dado[1] }}</td>
+            <td>{{ dado[2] }}</td>
+            <td>{{ dado[3] }}</td>
+            <td>{{ dado[4] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
