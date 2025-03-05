@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar Órgão</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .form-container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .form-container input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .form-container input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .form-container input[type="submit"]:hover {
+            background-color: #218838;
+        }
+        .mensagem {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .sucesso {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .erro {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Cadastrar Órgão Responsável</h1>
+        <form action="/cadastrar_orgao" method="POST">
+            <label for="nome_orgao">Nome do Órgão:</label>
+            <input type="text" id="nome_orgao" name="nome_orgao" required>
+
+            <label for="site_oficial">Site Oficial:</label>
+            <input type="text" id="site_oficial" name="site_oficial" required>
+
+            <input type="submit" value="Cadastrar">
+        </form>
+
+        {% if mensagem %}
+            <div class="mensagem {{ 'sucesso' if 'sucesso' in mensagem else 'erro' }}">
+                {{ mensagem }}
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

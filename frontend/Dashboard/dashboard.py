@@ -16,7 +16,7 @@ engine = create_engine(DATABASE_URL)
 # Usa um context manager para garantir que a conexão seja fechada corretamente
 with engine.connect() as connection:
     # Lê os dados da tabela data_monitoring
-    df = pd.read_sql_query("select distinct state as uf, count(*) as contagem from br_inpe_prodes_2024 bip group by state", connection)
+    df = pd.read_sql_query("select distinct state as uf, count(*) as contagem from terrabrasilis_inpe.br_inpe_prodes_2024 bip group by state", connection)
 
 # Inicializa o aplicativo Dash
 app = dash.Dash(__name__)
