@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastrar Órgão</title>
+    <title>Editar Órgão</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -54,18 +54,22 @@
 </head>
 <body>
     <div class="form-container">
-        <h1>Cadastrar Órgão Responsável</h1>
-        <form action="/cadastrar_orgao" method="POST" enctype="multipart/form-data">
+        <h1>Editar Órgão</h1>
+        <form action="/editar_orgao/{{ orgao[0] }}" method="POST" enctype="multipart/form-data">
             <label for="nome_orgao">Nome do Órgão:</label>
-            <input type="text" id="nome_orgao" name="nome_orgao" required>
+            <input type="text" id="nome_orgao" name="nome_orgao" value="{{ orgao[1] }}" required>
 
             <label for="site_oficial">Site Oficial:</label>
-            <input type="url" id="site_oficial" name="site_oficial" required>
+            <input type="url" id="site_oficial" name="site_oficial" value="{{ orgao[2] }}" required>
 
             <label for="logo">Logotipo:</label>
             <input type="file" id="logo" name="logo" accept="image/*">
+            {% if orgao[3] %}
+                <p>Logotipo atual:</p>
+                <img src="{{ orgao[3] }}" alt="Logotipo" style="max-width: 100px;">
+            {% endif %}
 
-            <input type="submit" value="Cadastrar">
+            <input type="submit" value="Salvar Alterações">
         </form>
 
         {% if mensagem %}

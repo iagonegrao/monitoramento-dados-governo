@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastrar Dado para Monitoramento</title>
+    <title>Cadastrar Dado</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,7 +16,7 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-        .form-container input[type="text"],
+        .form-container input[type="text"], 
         .form-container select {
             width: 100%;
             padding: 10px;
@@ -27,14 +27,14 @@
         .form-container input[type="submit"] {
             width: 100%;
             padding: 10px;
-            background-color: #28a745;
+            background-color: #007bff;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
         .form-container input[type="submit"]:hover {
-            background-color: #218838;
+            background-color: #0056b3;
         }
         .mensagem {
             margin-top: 20px;
@@ -53,17 +53,20 @@
 </head>
 <body>
     <div class="form-container">
-        <h1>Cadastrar Dado para Monitoramento</h1>
+        <h1>Cadastrar Dado</h1>
         <form action="/cadastrar_dado" method="POST">
             <label for="fk_id_agency">Órgão Responsável:</label>
             <select id="fk_id_agency" name="fk_id_agency" required>
                 <option value="">Selecione um órgão</option>
                 {% for orgao in orgaos %}
-                    <option value="{{ orgao.id }}">{{ orgao.nome_orgao }}</option>
+                    <option value="{{ orgao[0] }}">{{ orgao[1] }}</option>
                 {% endfor %}
             </select>
 
-            <label for="site_oficial">Link Final do Dado (URL):</label>
+            <label for="nome_dado">Nome do Dado:</label>
+            <input type="text" id="nome_dado" name="nome_dado" required>
+
+            <label for="site_oficial">Link Final do Dado:</label>
             <input type="text" id="site_oficial" name="site_oficial" required>
 
             <input type="submit" value="Cadastrar">

@@ -1,9 +1,14 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 import psycopg2
+from werkzeug.utils import secure_filename
+import os
+from sqlalchemy import create_engine
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'static/logos'  # Pasta para armazenar as imagens
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)  # Cria a pasta se não existir
 
-# Configurações do banco de dados
+# Configuração do banco de dados
 DATABASE_CONFIG = {
     'dbname': 'dados_governo',
     'user': 'postgres',
@@ -11,88 +16,133 @@ DATABASE_CONFIG = {
     'host': 'localhost'
 }
 
+DATABASE_URL = "postgresql+psycopg2://postgres:191010@localhost/dados_governo"
+engine = create_engine(DATABASE_URL)
+
 def conectar_banco():
     """Conecta ao banco de dados PostgreSQL."""
     return psycopg2.connect(**DATABASE_CONFIG)
 
 @app.route('/')
 def index():
-    """Página inicial."""
-    return render_template('cadastrar_orgao.html')
+    """Página inicial com listagem de órgãos e dados cadastrados."""
+    try:
+        with conectar_banco() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id, nome_orgao, site_oficial, logo FROM agency;")
+                orgaos = cur.fetchall()
 
-@app.route('/cadastrar_orgao', methods=['POST'])
+                cur.execute("SELECT id, nome_dado, site_oficial FROM data_monitoring;")
+                dados = cur.fetchall()
+    except Exception as e:
+        orgaos, dados = [], []
+        print(f"Erro ao carregar dados: {e}")  # Depuração
+
+    return render_template('index.html', orgaos=orgaos, dados=dados)
+
+@app.route('/cadastrar_orgao', methods=['GET', 'POST'])
 def cadastrar_orgao():
     """Cadastra um novo órgão na tabela agency."""
-    # Recupera os dados do formulário
-    nome_orgao = request.form['nome_orgao']
-    site_oficial = request.form['site_oficial']
+    mensagem = None
 
-    # Insere os dados no banco de dados
-    try:
-        conn = conectar_banco()
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO agency (nome_orgao, site_oficial) VALUES (%s, %s);",
-            (nome_orgao, site_oficial)
-        conn.commit()
-        cur.close()
-        conn.close()
-        mensagem = "Órgão cadastrado com sucesso!"
-    except Exception as e:
-        mensagem = f"Erro ao cadastrar órgão: {e}"
+    if request.method == 'POST':
+        nome_orgao = request.form.get('nome_orgao')
+        site_oficial = request.form.get('site_oficial')
+        logo = request.files.get('logo')
 
-    # Exibe uma mensagem de sucesso ou erro
+        if not nome_orgao or not site_oficial:
+            mensagem = "Erro: Todos os campos são obrigatórios!"
+        else:
+            logo_filename = os.path.join('logos', logo_filename)  # Salva apenas 'logos/imagem.png'
+            if logo and logo.filename:
+                logo_filename = f"logos/{logo_filename}"  # Garante que usa apenas barras normais "/"
+                logo_path = os.path.join(app.config['UPLOAD_FOLDER'], logo_filename)
+                logo.save(logo_path)
+                logo_filename = f"/{logo_path}"  # Caminho relativo para exibição
+
+            try:
+                with conectar_banco() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("INSERT INTO agency (nome_orgao, site_oficial, logo) VALUES (%s, %s, %s);",
+                                    (nome_orgao, site_oficial, logo_filename))
+                        mensagem = "Órgão cadastrado com sucesso!"
+            except Exception as e:
+                mensagem = f"Erro ao cadastrar órgão: {e}"
+
     return render_template('cadastrar_orgao.html', mensagem=mensagem)
 
-@app.route('/cadastrar_dado')
+@app.route('/editar_orgao/<int:orgao_id>', methods=['GET', 'POST'])
+def editar_orgao(orgao_id):
+    """Edita um órgão já cadastrado."""
+    mensagem = None
+    orgao = None
+
+    try:
+        with conectar_banco() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id, nome_orgao, site_oficial, logo FROM agency WHERE id = %s;", (orgao_id,))
+                orgao = cur.fetchone()
+
+        if request.method == 'POST':
+            nome_orgao = request.form.get('nome_orgao')
+            site_oficial = request.form.get('site_oficial')
+            logo = request.files.get('logo')
+
+            if not nome_orgao or not site_oficial:
+                mensagem = "Erro: Todos os campos são obrigatórios!"
+            else:
+                logo_filename = orgao[3]  # Mantém o logo atual caso não seja atualizado
+                if logo and logo.filename:
+                    logo_filename = secure_filename(logo.filename)
+                    logo_path = os.path.join(app.config['UPLOAD_FOLDER'], logo_filename)
+                    logo.save(logo_path)
+                    logo_filename = f"/{logo_path}"
+
+                with conectar_banco() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("UPDATE agency SET nome_orgao = %s, site_oficial = %s, logo = %s WHERE id = %s;",
+                                    (nome_orgao, site_oficial, logo_filename, orgao_id))
+                        mensagem = "Órgão atualizado com sucesso!"
+
+                return redirect(url_for('index'))
+
+    except Exception as e:
+        mensagem = f"Erro ao carregar órgão: {e}"
+
+    return render_template('editar_orgao.html', orgao=orgao, mensagem=mensagem)
+
+@app.route('/cadastrar_dado', methods=['GET', 'POST'])
 def cadastrar_dado():
-    """Exibe o formulário para cadastrar um novo dado a ser monitorado."""
-    # Recupera a lista de órgãos cadastrados
+    """Exibe o formulário para cadastrar um novo dado a ser monitorado e processa a inserção."""
+    mensagem = None
+
     try:
-        conn = conectar_banco()
-        cur = conn.cursor()
-        cur.execute("SELECT id, nome_orgao FROM agency;")
-        orgaos = cur.fetchall()
-        cur.close()
-        conn.close()
+        with conectar_banco() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id, nome_orgao FROM agency;")
+                orgaos = cur.fetchall()
     except Exception as e:
         mensagem = f"Erro ao carregar órgãos: {e}"
         orgaos = []
 
-    return render_template('cadastrar_dado.html', orgaos=orgaos)
+    if request.method == 'POST':
+        fk_id_agency = request.form.get('fk_id_agency')
+        nome_dado = request.form.get('nome_dado')
+        site_oficial = request.form.get('site_oficial')
 
-@app.route('/cadastrar_dado', methods=['POST'])
-def cadastrar_dado_post():
-    """Cadastra um novo dado a ser monitorado na tabela data_monitoring."""
-    # Recupera os dados do formulário
-    fk_id_agency = request.form['fk_id_agency']
-    site_oficial = request.form['site_oficial']
-
-    # Insere os dados no banco de dados
-    try:
-        conn = conectar_banco()
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO data_monitoring (fk_id_agency, site_oficial, script) VALUES (%s, %s, 0);",
-            (fk_id_agency, site_oficial))
-        conn.commit()
-        cur.close()
-        conn.close()
-        mensagem = "Dado cadastrado com sucesso!"
-    except Exception as e:
-        mensagem = f"Erro ao cadastrar dado: {e}"
-
-    # Recupera a lista de órgãos para exibir novamente no formulário
-    try:
-        conn = conectar_banco()
-        cur = conn.cursor()
-        cur.execute("SELECT id, nome_orgao FROM agency;")
-        orgaos = cur.fetchall()
-        cur.close()
-        conn.close()
-    except Exception as e:
-        mensagem = f"Erro ao carregar órgãos: {e}"
-        orgaos = []
+        if not fk_id_agency or not nome_dado or not site_oficial:
+            mensagem = "Erro: Todos os campos são obrigatórios!"
+        else:
+            try:
+                with conectar_banco() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            "INSERT INTO data_monitoring (fk_id_agency, nome_dado, site_oficial, script, update_date) VALUES (%s, %s, %s, %s, NOW());",
+                            (fk_id_agency, nome_dado, site_oficial, '0')
+                        )
+                        mensagem = "Dado cadastrado com sucesso!"
+            except Exception as e:
+                mensagem = f"Erro ao cadastrar dado: {e}"
 
     return render_template('cadastrar_dado.html', mensagem=mensagem, orgaos=orgaos)
 

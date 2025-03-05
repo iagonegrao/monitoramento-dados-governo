@@ -1,27 +1,113 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <title>Monitoramento de Dados Governamentais</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página Inicial</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .list-item {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .list-item img {
+            max-width: 50px;
+            max-height: 50px;
+            margin-right: 10px;
+        }
+        .dashboard-container {
+            margin-top: 40px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+        .button {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-    <h1>Dados Monitorados</h1>
-    <table border="1">
-        <tr>
-            <th>ID</th>
-            <th>Órgão</th>
-            <th>Site Oficial</th>
-            <th>Data de Criação</th>
-            <th>Última Atualização</th>
-        </tr>
-        {% for dado in dados %}
-        <tr>
-            <td>{{ dado[0] }}</td>
-            <td>{{ dado[1] }}</td>
-            <td>{{ dado[2] }}</td>
-            <td>{{ dado[3] }}</td>
-            <td>{{ dado[4] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+    <div class="container">
+        <h1>Bem-vindo ao Sistema de Monitoramento</h1>
+
+        <!-- Botões para cadastrar -->
+        <a href="/cadastrar_orgao" class="button">Cadastrar Órgão</a>
+        <a href="/cadastrar_dado" class="button">Cadastrar Dado</a>
+
+        <div class="section">
+            <div class="title">Órgãos Cadastrados</div>
+            <ul class="list">
+                {% if orgaos %}
+                    {% for orgao in orgaos %}
+                        <li class="list-item">
+                            <div style="display: flex; align-items: center;">
+                                {% if orgao[3] %}
+                                <img src="{{ url_for('static', filename=orgao[3]) }}" alt="Logotipo">
+                                {% endif %}
+                                <span>{{ orgao[1] }} - <a href="{{ orgao[2] }}" target="_blank">{{ orgao[2] }}</a></span>
+                            </div>
+                            <a href="/editar_orgao/{{ orgao[0] }}" class="button" style="background-color: #28a745;">Editar</a>
+                        </li>
+                    {% endfor %}
+                {% else %}
+                    <li class="list-item">Nenhum órgão cadastrado.</li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <div class="section">
+            <div class="title">Dados Monitorados</div>
+            <ul class="list">
+                {% if dados %}
+                    {% for dado in dados %}
+                        <li class="list-item">{{ dado[1] }} - <a href="{{ dado[2] }}" target="_blank">{{ dado[2] }}</a></li>
+                    {% endfor %}
+                {% else %}
+                    <li class="list-item">Nenhum dado cadastrado.</li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <div class="dashboard-container">
+            <div class="title">Painel de Análise</div>
+            <iframe src="http://127.0.0.1:8050" width="100%" height="600px" style="border: none;"></iframe>
+        </div>
+    </div>
 </body>
 </html>
