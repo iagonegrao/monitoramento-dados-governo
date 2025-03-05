@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar Dado para Monitoramento</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .form-container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .form-container input[type="text"],
+        .form-container select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .form-container input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .form-container input[type="submit"]:hover {
+            background-color: #218838;
+        }
+        .mensagem {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .sucesso {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .erro {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Cadastrar Dado para Monitoramento</h1>
+        <form action="/cadastrar_dado" method="POST">
+            <label for="fk_id_agency">Órgão Responsável:</label>
+            <select id="fk_id_agency" name="fk_id_agency" required>
+                <option value="">Selecione um órgão</option>
+                {% for orgao in orgaos %}
+                    <option value="{{ orgao.id }}">{{ orgao.nome_orgao }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="site_oficial">Link Final do Dado (URL):</label>
+            <input type="text" id="site_oficial" name="site_oficial" required>
+
+            <input type="submit" value="Cadastrar">
+        </form>
+
+        {% if mensagem %}
+            <div class="mensagem {{ 'sucesso' if 'sucesso' in mensagem else 'erro' }}">
+                {{ mensagem }}
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
