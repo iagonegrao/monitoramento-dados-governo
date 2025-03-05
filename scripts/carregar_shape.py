@@ -1,37 +1,46 @@
-import geopandas as gpd
-from sqlalchemy import create_engine, inspect
-import sys
 import os
-from config import DATABASE_CONFIG
+import geopandas as gpd
+from sqlalchemy import create_engine, text
+
+# Configurações do banco de dados
+DATABASE_URL = "postgresql+psycopg2://postgres:191010@localhost/dados_governo"
+
+# Cria uma conexão com o banco de dados usando SQLAlchemy
+engine = create_engine(DATABASE_URL)
 
 def carregar_shapefile_para_postgres(caminho_shapefile, nome_tabela):
-    # Ler o arquivo SHP usando geopandas
+    """
+    Carrega um shapefile no PostgreSQL usando GeoPandas e SQLAlchemy.
+    Define manualmente o nome do índice para evitar problemas com limites de caracteres.
+    """
+    # Verifica se o arquivo shapefile existe
+    if not os.path.exists(caminho_shapefile):
+        raise FileNotFoundError(f"Arquivo shapefile não encontrado: {caminho_shapefile}")
+
+    # Ler o shapefile com GeoPandas
     gdf = gpd.read_file(caminho_shapefile)
 
-    # Criar a string de conexão com o banco de dados
-    conexao_str = f"postgresql://{DATABASE_CONFIG['user']}:{DATABASE_CONFIG['password']}@{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/{DATABASE_CONFIG['dbname']}"
+    # Definir um nome de índice manualmente (limitado a 63 caracteres)
+    nome_indice = f"idx_{nome_tabela}_geom"  # Nome curto para o índice
 
-    # Criar a engine de conexão com o banco de dados
-    engine = create_engine(conexao_str)
-
-    # Verificar se a tabela já existe
-    inspector = inspect(engine)
-    if nome_tabela in inspector.get_table_names():
-        print(f"A tabela {nome_tabela} já existe. Realizando TRUNCATE...")
-        with engine.connect() as conn:
-            conn.execute(f"TRUNCATE TABLE {nome_tabela};")
-            conn.commit()
-
-    # Carregar os dados no banco de dados
+    # Carregar os dados no PostgreSQL
     gdf.to_postgis(nome_tabela, engine, if_exists='append', index=False)
 
-    print(f"Dados carregados com sucesso na tabela {nome_tabela}!")
+    # Criar um índice espacial manualmente
+    with engine.connect() as conn:
+        conn.execute(text(f"CREATE INDEX {nome_indice} ON {nome_tabela} USING GIST (geometry);"))
+        conn.commit()  # Confirma a transação
 
-# Caminho para o arquivo SHP
-caminho_shapefile = r'C:\Users\iagoc\Downloads\dashboard_alerts-shapefile\dashboard_alerts-shapefile.shp'
+    print(f"Dados do shapefile '{caminho_shapefile}' carregados na tabela '{nome_tabela}' com sucesso!")
+    print(f"Índice espacial '{nome_indice}' criado manualmente.")
 
-# Nome da tabela que será criada no PostgreSQL
-nome_tabela = 'br_mapbiomas_alert'
+# Exemplo de uso
+if __name__ == "__main__":
+    # Caminho para o shapefile (usando raw string para evitar problemas com barras invertidas)
+    caminho_shapefile = r"C:\Arquivos_monitorados\prodes_amazonia_legal_2024_cenas_prioritarias\yearly_deforestation_2024_pri.shp"
 
-# Chamar a função para carregar os dados
-carregar_shapefile_para_postgres(caminho_shapefile, nome_tabela)
+    # Nome da tabela no PostgreSQL
+    nome_tabela = "br_inpe_prodes_2024"  # Nome curto para evitar problemas
+
+    # Carregar o shapefile no PostgreSQL
+    carregar_shapefile_para_postgres(caminho_shapefile, nome_tabela)

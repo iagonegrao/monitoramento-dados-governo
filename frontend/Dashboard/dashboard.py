@@ -16,7 +16,7 @@ engine = create_engine(DATABASE_URL)
 # Usa um context manager para garantir que a conexão seja fechada corretamente
 with engine.connect() as connection:
     # Lê os dados da tabela data_monitoring
-    df = pd.read_sql_query("SELECT * FROM br_mapbiomas_alert", connection)
+    df = pd.read_sql_query("select distinct state as uf, count(*) as contagem from br_inpe_prodes_2024 bip group by state", connection)
 
 # Inicializa o aplicativo Dash
 app = dash.Dash(__name__)
@@ -29,10 +29,10 @@ app.layout = html.Div(children=[
         id='example-graph',
         figure={
             'data': [
-                {'x': df['DTPUBLI'], 'y': df['DTPUBLI'], 'type': 'bar', 'name': 'Atualizações'},
+                {'x': df['uf'], 'y': df['contagem'], 'type': 'bar', 'name': 'Atualizações'},
             ],
             'layout': {
-                'title': 'Histórico de Atualizações'
+                'title': 'Quantidade de embargos por estado'
             }
         }
     )
