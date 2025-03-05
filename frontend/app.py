@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request
 import psycopg2
 
 app = Flask(__name__)
@@ -34,6 +34,7 @@ def cadastrar_orgao():
         cur.execute(
             "INSERT INTO agency (nome_orgao, site_oficial) VALUES (%s, %s);",
             (nome_orgao, site_oficial)
+        )
         conn.commit()
         cur.close()
         conn.close()
