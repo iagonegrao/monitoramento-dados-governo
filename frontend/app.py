@@ -53,9 +53,9 @@ def cadastrar_orgao():
         if not nome_orgao or not site_oficial:
             mensagem = "Erro: Todos os campos são obrigatórios!"
         else:
-            logo_filename = os.path.join('logos', logo_filename)  # Salva apenas 'logos/imagem.png'
+            logo_filename = None  # Inicializa a variável antes de usá-la
             if logo and logo.filename:
-                logo_filename = f"logos/{logo_filename}"  # Garante que usa apenas barras normais "/"
+                logo_filename = secure_filename(logo.filename)  # Asegure-se de que o nome do arquivo é seguro
                 logo_path = os.path.join(app.config['UPLOAD_FOLDER'], logo_filename)
                 logo.save(logo_path)
                 logo_filename = f"/{logo_path}"  # Caminho relativo para exibição
@@ -63,6 +63,10 @@ def cadastrar_orgao():
             try:
                 with conectar_banco() as conn:
                     with conn.cursor() as cur:
+                        # Verifique se logo_filename foi definido antes de tentar inseri-lo no banco de dados
+                        if logo_filename is None:
+                            logo_filename = ''  # Ou um valor padrão, se não houver logo
+
                         cur.execute("INSERT INTO agency (nome_orgao, site_oficial, logo) VALUES (%s, %s, %s);",
                                     (nome_orgao, site_oficial, logo_filename))
                         mensagem = "Órgão cadastrado com sucesso!"
