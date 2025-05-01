@@ -1,156 +1,202 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cruzar CAR</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realizar análise</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 40px;
+            margin: 20px;
+            background-color: #f5f5f5;
         }
-
-        h1, h2 {
-            color: #2c3e50;
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
-        form {
-            background-color: #f4f4f4;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
+        .form-container h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
         }
-
-        label {
-            display: block;
-            margin-top: 10px;
+        .form-container label {
             font-weight: bold;
+            color: #555;
+            display: block;
+            margin-top: 15px;
         }
-
-        input, select, button {
-            padding: 8px;
-            margin-top: 5px;
+        .form-container input[type="text"], 
+        .form-container select {
             width: 100%;
+            padding: 12px;
+            margin: 8px 0 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
             box-sizing: border-box;
+            font-size: 16px;
         }
-
-        button {
-            background-color: #3498db;
+        .form-container input[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
             color: white;
             border: none;
-            margin-top: 15px;
+            border-radius: 5px;
             cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: background-color 0.3s;
         }
-
-        button:hover {
-            background-color: #2980b9;
+        .form-container input[type="submit"]:hover {
+            background-color: #0056b3;
         }
-
-        .resultado {
-            background-color: #eaf2f8;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            padding: 20px;
-        }
-
-        .fonte-section {
-            background-color: #ffffff;
-            border: 1px solid #dcdcdc;
-            border-radius: 8px;
+        .mensagem {
+            margin-top: 20px;
             padding: 15px;
-            margin-top: 15px;
+            border-radius: 5px;
         }
-
+        .sucesso {
+            background-color: #d4edda;
+            color: #155724;
+            border-left: 5px solid #28a745;
+        }
+        .aviso {
+            background-color: #fff3cd;
+            color: #856404;
+            border-left: 5px solid #ffc107;
+        }
+        .alerta {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 5px solid #dc3545;
+        }
+        .erro {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 5px solid #dc3545;
+        }
+        .resultado {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .resultado h2 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .fonte-section {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            background-color: white;
+        }
         .fonte-section h3 {
             margin-top: 0;
-            color: #34495e;
+            color: #444;
         }
-
-        .success {
-            color: #28a745; /* Verde - quando NÃO há interseção */
-            font-weight: bold;
-        }
-
-        .warning {
-            color: #dc3545; /* Vermelho - quando HÁ interseção */
-            font-weight: bold;
-        }
-
-        .error {
-            color: red;
-            font-weight: bold;
+        @media (max-width: 768px) {
+            .form-container {
+                max-width: 95%;
+                padding: 20px;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Cruzar CAR com Bases de Monitoramento</h1>
+    <div class="form-container">
+        <h1>Realizar Análise Compliance ESG</h1>
+        <form method="POST">
+            <label for="cod_imovel">Código do CAR:</label>
+            <input type="text" id="cod_imovel" name="cod_imovel" required placeholder="Digite o código do CAR">
 
-    <form method="POST">
-        <label for="cod_imovel">Código do CAR:</label>
-        <input type="text" id="cod_imovel" name="cod_imovel" required>
+            <label for="fonte_dado">Fonte de Dado:</label>
+            <select name="fonte_dado" id="fonte_dado">
+                <option value="todos">Todos os dados disponíveis</option>
+                <option value="prodes">Prodes</option>
+                <option value="mapbiomas">Mapbiomas</option>
+                <option value="sipam">Sipam</option>
+            </select>
 
-        <label for="fonte_dado">Fonte de Dado:</label>
-        <select name="fonte_dado" id="fonte_dado">
-            <option value="prodes">Prodes</option>
-            <option value="mapbiomas">Mapbiomas</option>
-            <option value="sipam">Sipam</option>
-            <option value="todos">Todos</option>
-        </select>
+            <input type="submit" value="Realizar Análise">
+        </form>
 
-        <button type="submit">Executar Cruzamento</button>
-    </form>
+        {% if resultado %}
+            <div class="resultado">
+                <h2>Resultado da Consulta</h2>
 
-    {% if resultado %}
-        <div class="resultado">
-            <h2>Resultado da Consulta</h2>
-
-            {% if resultado.erro %}
-                <p class="error">Erro: {{ resultado.erro }}</p>
-            {% else %}
-
-                {% if resultado.car_encontrado %}
-                    {% if resultado.analises %}
-                        {% for analise in resultado.analises %}
-                            <div class="fonte-section">
-                                <h3>Fonte: {{ analise.fonte|capitalize }}</h3>
-                                {% if analise.intersecao %}
-                                    <p class="warning">⚠ Interseção encontrada.</p>
-                                    <p>Área de interseção: {{ "%.2f"|format(analise.area_intersecao) }} ha</p>
-                                    <p>Percentual de sobreposição: {{ "%.2f"|format(analise.percentual) }}%</p>
-                                {% else %}
-                                    <p class="success">✔ Nenhuma interseção encontrada.</p>
-                                {% endif %}
-                            </div>
-                        {% endfor %}
-                    {% elif resultado.intersecao is defined %}
-                        {% if resultado.intersecao %}
-                            <p class="warning">⚠ Interseção encontrada.</p>
-                            <p>Área de interseção: {{ "%.2f"|format(resultado.area_intersecao) }} ha</p>
-                            <p>Percentual de sobreposição: {{ "%.2f"|format(resultado.percentual) }}%</p>
-                        {% else %}
-                            <p class="success">✔ Nenhuma interseção encontrada com a base selecionada.</p>
-                        {% endif %}
-                    {% endif %}
+                {% if resultado.erro %}
+                    <div class="erro">
+                        <p>Erro: {{ resultado.erro }}</p>
+                    </div>
                 {% else %}
-                    <p class="warning">O código CAR informado não foi encontrado em nossas bases.</p>
+                    {% if resultado.car_encontrado %}
+                        {% if resultado.analises %}
+                            {% for analise in resultado.analises %}
+                                <div class="fonte-section">
+                                    <h3>Fonte: {{ analise.fonte|capitalize }}</h3>
+                                    {% if analise.intersecao %}
+                                        <div class="{% if analise.percentual > 10 %}alerta{% else %}aviso{% endif %}">
+                                            <p>⚠ Interseção encontrada.</p>
+                                            <p>Área de interseção: {{ "%.2f"|format(analise.area_intersecao) }} ha</p>
+                                            <p>Percentual de sobreposição: {{ "%.2f"|format(analise.percentual) }}%</p>
+                                        </div>
+                                    {% else %}
+                                        <div class="sucesso">
+                                            <p>✔ Nenhuma interseção encontrada.</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% elif resultado.intersecao is defined %}
+                            {% if resultado.intersecao %}
+                                <div class="{% if resultado.percentual > 10 %}alerta{% else %}aviso{% endif %}">
+                                    <p>⚠ Interseção encontrada.</p>
+                                    <p>Área de interseção: {{ "%.2f"|format(resultado.area_intersecao) }} ha</p>
+                                    <p>Percentual de sobreposição: {{ "%.2f"|format(resultado.percentual) }}%</p>
+                                </div>
+                            {% else %}
+                                <div class="sucesso">
+                                    <p>✔ Nenhuma interseção encontrada com a base selecionada.</p>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                        <div class="aviso">
+                            <p>O código CAR informado não foi encontrado em nossas bases.</p>
+                        </div>
+                    {% endif %}
                 {% endif %}
-            {% endif %}
-        </div>
-    {% endif %}
-<!-- Botão de retorno para página inicial -->
-<div style="text-align: center; margin-top: 20px;">
-    <a href="{{ url_for('index') }}">
-        <button style="
-            padding: 10px 20px;
-            background-color: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;">
-            ⬅ Voltar à Página Inicial
-        </button>
-    </a>
-</div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Botão de retorno para página inicial -->
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="{{ url_for('index') }}">
+            <button style="
+                padding: 12px 25px;
+                background-color: #6c757d;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: bold;
+                transition: background-color 0.3s;">
+                ⬅ Voltar à Página Inicial
+            </button>
+        </a>
+    </div>
 </body>
 </html>
