@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, request
 import psycopg2
+from psycopg2 import sql
 from werkzeug.utils import secure_filename
 import os
 from sqlalchemy import create_engine
@@ -149,6 +150,56 @@ def cadastrar_dado():
                 mensagem = f"Erro ao cadastrar dado: {e}"
 
     return render_template('cadastrar_dado.html', mensagem=mensagem, orgaos=orgaos)
-
+@app.route('/cruzar_car', methods=['GET', 'POST'])
+def cruzar_car():
+    resultado = None
+    
+    if request.method == 'POST':
+        cod_imovel = request.form['cod_imovel']
+        
+        try:
+            conn = conectar_banco()
+            cur = conn.cursor()
+            
+            # 1. Verificar se CAR existe
+            cur.execute("SELECT geom FROM sicar WHERE cod_imovel = %s", (cod_imovel,))
+            car_data = cur.fetchone()
+            
+            if not car_data:
+                resultado = {'car_encontrado': False}
+            else:
+                # 2. Calcular interseção com PRODES
+                query = """
+                        SELECT 
+                            ST_Area(ST_Intersection(ST_Transform(s.geom, 4674), ST_Transform(p.geometry, 4674))::geography) / 10000 AS area_ha,
+                            (ST_Area(ST_Intersection(ST_Transform(s.geom, 4674), ST_Transform(p.geometry, 4674))::geography) / 
+                            ST_Area(ST_Transform(s.geom, 4674)::geography)) * 100.0 AS percentual
+                        FROM sicar s, terrabrasilis_inpe.br_inpe_prodes_2024 p
+                        WHERE s.cod_imovel = %s 
+                        AND ST_Intersects(ST_Transform(s.geom, 4674), ST_Transform(p.geometry, 4674));
+                    """
+                cur.execute(query, (cod_imovel,))
+                row = cur.fetchone()
+                
+                if row:
+                    resultado = {
+                        'car_encontrado': True,
+                        'intersecao': True,
+                        'area_intersecao': float(row[0]),
+                        'percentual': float(row[1])
+                    }
+                else:
+                    resultado = {
+                        'car_encontrado': True,
+                        'intersecao': False
+                    }
+                    
+        except Exception as e:
+            resultado = {'erro': str(e)}
+        finally:
+            cur.close()
+            conn.close()
+    
+    return render_template('cruzar_car.html', resultado=resultado)
 if __name__ == '__main__':
     app.run(debug=True)

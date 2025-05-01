@@ -1,44 +1,92 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cruzamento com CAR</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-container { max-width: 500px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { 
+            width: 100%; 
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button { 
+            padding: 10px 20px; 
+            background: #2c7be5; 
+            color: white; 
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #1a68d1; }
+        .result {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+        .success {
+            background-color: #f0f9f0;
+            border-color: #28a745;
+        }
+        .warning {
+            background-color: #fff8e6;
+            border-color: #ffc107;
+        }
+        .error {
+            background-color: #fdecea;
+            border-color: #dc3545;
+        }
+        .result-title {
+            margin-top: 0;
+            color: #333;
+        }
+        .result-value {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Consulta de Cruzamento com CAR</h2>
+        <form method="POST">
+            <div class="form-group">
+                <label for="cod_imovel">Informe o código CAR:</label>
+                <input type="text" id="cod_imovel" name="cod_imovel" required
+                       placeholder="Ex: SP-1234567-ABCDE">
+            </div>
+            
+            <button type="submit">Consultar</button>
+        </form>
 
-{% block content %}
-<div class="container mt-4">
-    <h2>Cruzamento de Dados com CAR</h2>
-    <form method="POST" action="{{ url_for('cruzar_car') }}">
-        <div class="form-group">
-            <label for="codigo_car">Código CAR:</label>
-            <input type="text" class="form-control" id="codigo_car" name="codigo_car" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="dado_id">Dado para Cruzamento:</label>
-            <select class="form-control" id="dado_id" name="dado_id" required>
-                <option value="">Selecione um dado</option>
-                {% for dado in dados %}
-                <option value="{{ dado.id }}">{{ dado.nome }} ({{ dado.orgao }})</option>
-                {% endfor %}
-            </select>
-        </div>
-        
-        <button type="submit" class="btn btn-primary">Realizar Cruzamento</button>
-    </form>
-
-    {% if resultado %}
-    <div class="mt-4">
-        <h3>Resultado do Cruzamento</h3>
-        <div class="alert alert-{{ 'success' if resultado.intersecao else 'warning' }}">
-            {% if resultado.car_encontrado %}
-                {% if resultado.intersecao %}
-                    <p><strong>Área de Interseção:</strong> {{ resultado.area_intersecao|round(2) }} hectares</p>
-                    <p><strong>Percentual de Sobreposição:</strong> {{ resultado.percentual|round(2) }}%</p>
-                    <p><strong>Detalhes:</strong> {{ resultado.detalhes }}</p>
-                {% else %}
-                    <p>Não houve interseção entre o CAR e o dado selecionado.</p>
-                {% endif %}
+        {% if resultado %}
+        <div class="result {% if resultado.erro %}error{% elif resultado.intersecao %}success{% else %}warning{% endif %}">
+            <h3 class="result-title">Resultado da Consulta</h3>
+            
+            {% if resultado.erro %}
+                <p class="result-value">Erro: {{ resultado.erro }}</p>
+            {% elif not resultado.car_encontrado %}
+                <p class="result-value">O código CAR informado não foi encontrado em nossas bases.</p>
+            {% elif resultado.intersecao %}
+                <p class="result-value">
+                    <strong>Área de interseção:</strong> 
+                    {{ "%.2f"|format(resultado.area_intersecao) }} hectares
+                </p>
+                <p class="result-value">
+                    <strong>Percentual de sobreposição:</strong> 
+                    {{ "%.2f"|format(resultado.percentual) }}%
+                </p>
             {% else %}
-                <p>O código CAR informado não consta em nossas bases de dados.</p>
+                <p class="result-value">Não foi identificada interseção com áreas de desmatamento.</p>
             {% endif %}
         </div>
+        {% endif %}
     </div>
-    {% endif %}
-</div>
-{% endblock %}
+</body>
+</html>
