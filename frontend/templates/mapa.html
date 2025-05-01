@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo de Mapas - Servidores Públicos</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.3.0/ol.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+        }
+        
+        .map-container {
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .controls {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        .layer-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: white;
+        }
+        
+        .layer-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        
+        .layer-item:hover {
+            background-color: #f0f8ff;
+        }
+        
+        .layer-item.active {
+            background-color: #e7f1ff;
+            font-weight: bold;
+        }
+        
+        .info-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-width: 350px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .coordinate-display {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            z-index: 1000;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            padding: 10px;
+            background-color: #f8d7da;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        .loading {
+            color: #0c5460;
+            background-color: #d1ecf1;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .server-options {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #e7f4ff;
+            border-radius: 4px;
+        }
+        
+        .server-btn {
+            margin: 5px;
+            padding: 5px 10px;
+            background-color: #e2e3e5;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                max-width: 95%;
+                padding: 15px;
+            }
+            
+            .map-container {
+                height: 400px;
+            }
+            
+            .info-panel {
+                max-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Módulo de Mapas - Servidores Públicos</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="service-url">Servidor WMS:</label>
+                <input type="text" id="service-url" value="https://ows.terrestris.de/osm/service">
+                
+                <div class="server-options">
+                    <small>Servidores públicos para teste:</small><br>
+                    <button class="server-btn" onclick="setServer('https://ows.terrestris.de/osm/service')">Terrestris (OSM)</button>
+                    <button class="server-btn" onclick="setServer('https://geo.weather.gc.ca/geomet')">Meteorológico Canadá</button>
+                    <button class="server-btn" onclick="setServer('https://www.gebco.net/data_and_products/gebco_web_services/web_map_service/mapserv')">GEBCO (Oceano)</button>
+                    <button class="server-btn" onclick="setServer('https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/WMSServer')">ArcGIS World</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <button id="load-layers">Carregar Camadas</button>
+                <button id="reset-map">Limpar Mapa</button>
+                <div id="error-message" class="error-message" style="display: none;"></div>
+                <div id="loading-message" class="loading" style="display: none;">Carregando camadas...</div>
+            </div>
+            
+            <div class="control-group">
+                <label>Camadas Disponíveis:</label>
+                <div class="layer-list" id="layer-list">
+                    <div class="layer-item">Clique em "Carregar Camadas" para listar</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+        
+        <div class="info-panel" id="feature-info" style="display: none;">
+            <h3>Informações do Elemento</h3>
+            <div id="feature-info-content"></div>
+            <button onclick="document.getElementById('feature-info').style.display = 'none';" style="margin-top: 10px;">Fechar</button>
+        </div>
+        
+        <div class="coordinate-display" id="mouse-position"></div>
+    </div>
+    
+    <div style="text-align: center; margin: 20px auto;">
+        <a href="{{ url_for('index') }}">
+            <button style="padding: 12px 25px; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+                ⬅ Voltar à Página Inicial
+            </button>
+        </a>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
+    <script>
+        // Configuração da projeção EPSG:3857 (Web Mercator)
+        proj4.defs("EPSG:3857", "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs");
+        ol.proj.proj4.register(proj4);
+
+        // Inicialização do mapa
+        const map = new ol.Map({
+            target: 'map',
+            layers: [
+                new ol.layer.Tile({
+                    source: new ol.source.OSM()
+                })
+            ],
+            view: new ol.View({
+                projection: 'EPSG:3857',
+                center: ol.proj.fromLonLat([-47.8825, -15.7934]), // Centro do Brasil
+                zoom: 4
+            })
+        });
+
+        // Controle de coordenadas
+        const mousePositionControl = new ol.control.MousePosition({
+            coordinateFormat: ol.coordinate.createStringXY(4),
+            projection: 'EPSG:3857',
+            className: 'custom-mouse-position',
+            target: document.getElementById('mouse-position'),
+            undefinedHTML: '&nbsp;'
+        });
+        map.addControl(mousePositionControl);
+
+        // Função para alterar servidor
+        function setServer(url) {
+            document.getElementById('service-url').value = url;
+            document.getElementById('error-message').style.display = 'none';
+            document.getElementById('layer-list').innerHTML = '<div class="layer-item">Clique em "Carregar Camadas" para listar</div>';
+        }
+
+        // Função para carregar camadas WMS
+        document.getElementById('load-layers').addEventListener('click', async function() {
+            const serviceUrl = document.getElementById('service-url').value.trim();
+            const layerList = document.getElementById('layer-list');
+            const errorMessage = document.getElementById('error-message');
+            const loadingMessage = document.getElementById('loading-message');
+            
+            // Resetar interface
+            errorMessage.style.display = 'none';
+            loadingMessage.style.display = 'block';
+            layerList.innerHTML = '<div class="layer-item">Carregando...</div>';
+            
+            try {
+                // Verificar URL válida
+                if (!serviceUrl.startsWith('http')) {
+                    throw new Error('URL deve começar com http:// ou https://');
+                }
+
+                // Tentar primeiro sem proxy
+                let response;
+                try {
+                    response = await fetch(`${serviceUrl}?service=WMS&version=1.3.0&request=GetCapabilities`);
+                    if (!response.ok) throw new Error('Erro na requisição direta');
+                } catch (directError) {
+                    console.log('Tentando com proxy CORS...');
+                    const proxyUrl = 'https://corsproxy.io/?';
+                    response = await fetch(proxyUrl + encodeURIComponent(`${serviceUrl}?service=WMS&version=1.3.0&request=GetCapabilities`));
+                    if (!response.ok) throw new Error('Erro mesmo com proxy CORS');
+                }
+
+                const text = await response.text();
+                
+                // Verificar se é um XML WMS válido
+                if (!text.includes('<WMS_Capabilities') && !text.includes('<WMT_MS_Capabilities')) {
+                    throw new Error('Resposta não é um XML WMS válido');
+                }
+
+                const parser = new ol.format.WMSCapabilities();
+                const result = parser.read(text);
+                
+                // Verificar estrutura de camadas
+                if (!result?.Capability?.Layer?.Layer) {
+                    throw new Error('Estrutura de capacidades inválida');
+                }
+
+                const layers = result.Capability.Layer.Layer;
+                layerList.innerHTML = '';
+                
+                if (layers.length === 0) {
+                    layerList.innerHTML = '<div class="layer-item">Nenhuma camada encontrada</div>';
+                    return;
+                }
+
+                // Adicionar camadas à lista (limitando a 50 para performance)
+                layers.slice(0, 50).forEach(layer => {
+                    if (layer.Name) {
+                        const layerItem = document.createElement('div');
+                        layerItem.className = 'layer-item';
+                        layerItem.textContent = layer.Title || layer.Name;
+                        layerItem.dataset.name = layer.Name;
+                        
+                        layerItem.addEventListener('click', () => {
+                            addWMSLayer(serviceUrl, layer.Name);
+                            document.querySelectorAll('.layer-item').forEach(item => {
+                                item.classList.remove('active');
+                            });
+                            layerItem.classList.add('active');
+                        });
+                        
+                        layerList.appendChild(layerItem);
+                    }
+                });
+
+            } catch (error) {
+                console.error('Erro ao carregar camadas:', error);
+                errorMessage.innerHTML = `
+                    <strong>Erro:</strong> ${error.message}<br><br>
+                    <strong>Possíveis soluções:</strong>
+                    <ul>
+                        <li>Verifique se o servidor está online</li>
+                        <li>Tente outro servidor da lista</li>
+                        <li>Para desenvolvimento local, instale a extensão <a href="https://chrome.google.com/webstore/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf" target="_blank">Allow CORS</a></li>
+                    </ul>
+                    <p>URL testada: <code>${serviceUrl}</code></p>
+                `;
+                errorMessage.style.display = 'block';
+                layerList.innerHTML = '<div class="layer-item">Falha ao carregar camadas</div>';
+            } finally {
+                loadingMessage.style.display = 'none';
+            }
+        });
+
+        // Função para adicionar camada WMS ao mapa
+        function addWMSLayer(serviceUrl, layerName) {
+            try {
+                // Remover camada existente se já estiver carregada
+                map.getLayers().forEach(layer => {
+                    if (layer.get('name') === layerName) {
+                        map.removeLayer(layer);
+                    }
+                });
+                
+                // Criar nova camada WMS
+                const wmsLayer = new ol.layer.Tile({
+                    source: new ol.source.TileWMS({
+                        url: serviceUrl,
+                        params: {
+                            'LAYERS': layerName,
+                            'TILED': true,
+                            'VERSION': '1.3.0',
+                            'CRS': 'EPSG:3857',
+                            'FORMAT': 'image/png'
+                        },
+                        serverType: 'geoserver',
+                        transition: 0
+                    }),
+                    properties: {
+                        'type': 'overlay',
+                        'name': layerName
+                    }
+                });
+                
+                map.addLayer(wmsLayer);
+                
+                // Configurar clique para obter informações
+                map.on('singleclick', function(evt) {
+                    const viewResolution = map.getView().getResolution();
+                    const url = wmsLayer.getSource().getFeatureInfoUrl(
+                        evt.coordinate,
+                        viewResolution,
+                        'EPSG:3857',
+                        {'INFO_FORMAT': 'text/html'}
+                    );
+                    
+                    if (url) {
+                        document.getElementById('feature-info-content').innerHTML = '<p>Carregando informações...</p>';
+                        document.getElementById('feature-info').style.display = 'block';
+                        
+                        fetch(url)
+                            .then(response => {
+                                if (!response.ok) throw new Error('Erro ao obter informações');
+                                return response.text();
+                            })
+                            .then(html => {
+                                document.getElementById('feature-info-content').innerHTML = html;
+                            })
+                            .catch(error => {
+                                console.error('Erro ao obter informações:', error);
+                                document.getElementById('feature-info-content').innerHTML = 
+                                    '<p>Erro ao carregar informações. Tente clicar em outro local.</p>';
+                            });
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Erro ao adicionar camada:', error);
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.innerHTML = `
+                    <strong>Erro ao carregar a camada:</strong> ${layerName}<br>
+                    <p>${error.message}</p>
+                `;
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        // Limpar mapa
+        document.getElementById('reset-map').addEventListener('click', function() {
+            map.getLayers().forEach(layer => {
+                if (layer.get('type') === 'overlay') {
+                    map.removeLayer(layer);
+                }
+            });
+            document.getElementById('layer-list').innerHTML = '<div class="layer-item">Clique em "Carregar Camadas" para listar</div>';
+            document.getElementById('feature-info').style.display = 'none';
+            document.getElementById('error-message').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
