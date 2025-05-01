@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Cruzamento de Dados com CAR</h2>
+    <form method="POST" action="{{ url_for('cruzar_car') }}">
+        <div class="form-group">
+            <label for="codigo_car">Código CAR:</label>
+            <input type="text" class="form-control" id="codigo_car" name="codigo_car" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="dado_id">Dado para Cruzamento:</label>
+            <select class="form-control" id="dado_id" name="dado_id" required>
+                <option value="">Selecione um dado</option>
+                {% for dado in dados %}
+                <option value="{{ dado.id }}">{{ dado.nome }} ({{ dado.orgao }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Realizar Cruzamento</button>
+    </form>
+
+    {% if resultado %}
+    <div class="mt-4">
+        <h3>Resultado do Cruzamento</h3>
+        <div class="alert alert-{{ 'success' if resultado.intersecao else 'warning' }}">
+            {% if resultado.car_encontrado %}
+                {% if resultado.intersecao %}
+                    <p><strong>Área de Interseção:</strong> {{ resultado.area_intersecao|round(2) }} hectares</p>
+                    <p><strong>Percentual de Sobreposição:</strong> {{ resultado.percentual|round(2) }}%</p>
+                    <p><strong>Detalhes:</strong> {{ resultado.detalhes }}</p>
+                {% else %}
+                    <p>Não houve interseção entre o CAR e o dado selecionado.</p>
+                {% endif %}
+            {% else %}
+                <p>O código CAR informado não consta em nossas bases de dados.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
