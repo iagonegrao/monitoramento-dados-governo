@@ -55,6 +55,7 @@ def index():
 @app.route('/mapa')
 def modulo_mapa():
     return render_template('mapa.html')
+
 @app.route('/cadastrar_orgao', methods=['GET', 'POST'])
 def cadastrar_orgao():
     mensagem = None
