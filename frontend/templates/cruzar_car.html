@@ -1,92 +1,156 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-    <title>Cruzamento com CAR</title>
+    <meta charset="UTF-8">
+    <title>Cruzar CAR</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .form-container { max-width: 500px; margin: 0 auto; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { 
-            width: 100%; 
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
         }
-        button { 
-            padding: 10px 20px; 
-            background: #2c7be5; 
-            color: white; 
+
+        h1, h2 {
+            color: #2c3e50;
+        }
+
+        form {
+            background-color: #f4f4f4;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        input, select, button {
+            padding: 8px;
+            margin-top: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
             border: none;
-            border-radius: 4px;
+            margin-top: 15px;
             cursor: pointer;
-            font-size: 16px;
         }
-        button:hover { background: #1a68d1; }
-        .result {
-            margin-top: 25px;
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .resultado {
+            background-color: #eaf2f8;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .fonte-section {
+            background-color: #ffffff;
+            border: 1px solid #dcdcdc;
+            border-radius: 8px;
             padding: 15px;
-            border-radius: 4px;
-            border-left: 4px solid;
+            margin-top: 15px;
         }
-        .success {
-            background-color: #f0f9f0;
-            border-color: #28a745;
-        }
-        .warning {
-            background-color: #fff8e6;
-            border-color: #ffc107;
-        }
-        .error {
-            background-color: #fdecea;
-            border-color: #dc3545;
-        }
-        .result-title {
+
+        .fonte-section h3 {
             margin-top: 0;
-            color: #333;
+            color: #34495e;
         }
-        .result-value {
-            font-size: 18px;
-            margin: 10px 0;
+
+        .success {
+            color: #28a745; /* Verde - quando NÃO há interseção */
+            font-weight: bold;
+        }
+
+        .warning {
+            color: #dc3545; /* Vermelho - quando HÁ interseção */
+            font-weight: bold;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <div class="form-container">
-        <h2>Consulta de Cruzamento com CAR</h2>
-        <form method="POST">
-            <div class="form-group">
-                <label for="cod_imovel">Informe o código CAR:</label>
-                <input type="text" id="cod_imovel" name="cod_imovel" required
-                       placeholder="Ex: SP-1234567-ABCDE">
-            </div>
-            
-            <button type="submit">Consultar</button>
-        </form>
+    <h1>Cruzar CAR com Bases de Monitoramento</h1>
 
-        {% if resultado %}
-        <div class="result {% if resultado.erro %}error{% elif resultado.intersecao %}success{% else %}warning{% endif %}">
-            <h3 class="result-title">Resultado da Consulta</h3>
-            
+    <form method="POST">
+        <label for="cod_imovel">Código do CAR:</label>
+        <input type="text" id="cod_imovel" name="cod_imovel" required>
+
+        <label for="fonte_dado">Fonte de Dado:</label>
+        <select name="fonte_dado" id="fonte_dado">
+            <option value="prodes">Prodes</option>
+            <option value="mapbiomas">Mapbiomas</option>
+            <option value="sipam">Sipam</option>
+            <option value="todos">Todos</option>
+        </select>
+
+        <button type="submit">Executar Cruzamento</button>
+    </form>
+
+    {% if resultado %}
+        <div class="resultado">
+            <h2>Resultado da Consulta</h2>
+
             {% if resultado.erro %}
-                <p class="result-value">Erro: {{ resultado.erro }}</p>
-            {% elif not resultado.car_encontrado %}
-                <p class="result-value">O código CAR informado não foi encontrado em nossas bases.</p>
-            {% elif resultado.intersecao %}
-                <p class="result-value">
-                    <strong>Área de interseção:</strong> 
-                    {{ "%.2f"|format(resultado.area_intersecao) }} hectares
-                </p>
-                <p class="result-value">
-                    <strong>Percentual de sobreposição:</strong> 
-                    {{ "%.2f"|format(resultado.percentual) }}%
-                </p>
+                <p class="error">Erro: {{ resultado.erro }}</p>
             {% else %}
-                <p class="result-value">Não foi identificada interseção com áreas de desmatamento.</p>
+
+                {% if resultado.car_encontrado %}
+                    {% if resultado.analises %}
+                        {% for analise in resultado.analises %}
+                            <div class="fonte-section">
+                                <h3>Fonte: {{ analise.fonte|capitalize }}</h3>
+                                {% if analise.intersecao %}
+                                    <p class="warning">⚠ Interseção encontrada.</p>
+                                    <p>Área de interseção: {{ "%.2f"|format(analise.area_intersecao) }} ha</p>
+                                    <p>Percentual de sobreposição: {{ "%.2f"|format(analise.percentual) }}%</p>
+                                {% else %}
+                                    <p class="success">✔ Nenhuma interseção encontrada.</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% elif resultado.intersecao is defined %}
+                        {% if resultado.intersecao %}
+                            <p class="warning">⚠ Interseção encontrada.</p>
+                            <p>Área de interseção: {{ "%.2f"|format(resultado.area_intersecao) }} ha</p>
+                            <p>Percentual de sobreposição: {{ "%.2f"|format(resultado.percentual) }}%</p>
+                        {% else %}
+                            <p class="success">✔ Nenhuma interseção encontrada com a base selecionada.</p>
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+                    <p class="warning">O código CAR informado não foi encontrado em nossas bases.</p>
+                {% endif %}
             {% endif %}
         </div>
-        {% endif %}
-    </div>
+    {% endif %}
+<!-- Botão de retorno para página inicial -->
+<div style="text-align: center; margin-top: 20px;">
+    <a href="{{ url_for('index') }}">
+        <button style="
+            padding: 10px 20px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;">
+            ⬅ Voltar à Página Inicial
+        </button>
+    </a>
+</div>
 </body>
 </html>
